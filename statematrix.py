@@ -1,5 +1,7 @@
 import numpy
 import midi
+import cPickle
+import os
 
 totalNotes = 128;
 
@@ -47,10 +49,10 @@ def midiToStatematrix(midifile):
         pulse += 1
         if tracksDone(trackPositions):
             break
-    for array in statematrix:
-        printCurrPlaying(array)
-        print "----------------------------"
-
+    # for array in statematrix:
+    #     printCurrPlaying(array)
+    #     print("----------------------------")
+    return statematrix
 
 def tracksDone(trackPositions):
     for position in trackPositions:
@@ -66,7 +68,7 @@ def getNote(intNote):
 def printCurrPlaying(currNotes):
     for array in currNotes:
         if array[0] == 1 or array[1] == 1:
-            print array[2]
+            print(array[2])
 
 def switch(x):
     return {
@@ -83,3 +85,18 @@ def switch(x):
         10 : 'A#',
         11 : 'B',
     }[x]
+
+def filesToDict(path):
+    return matDict
+
+if __name__ == '__main__':
+    #dict is essentially python equiv of a hashmap
+    path = "./OneDataSet/"
+    matDict = {}
+    dirs = os.listdir(path)
+    for file in dirs:
+        matDict[path+str(file)] = midiToStatematrix(path+str(file));
+    # print(matDict)
+    dataFile = open('data.txt', 'wb')
+    cPickle.dump(matDict, dataFile, cPickle.HIGHEST_PROTOCOL)
+    dataFile.close()

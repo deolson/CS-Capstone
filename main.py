@@ -1,11 +1,10 @@
-import os, sys
-import statematrix
+import pickle
 
 def main():
-    path = "./OneDataSet/"
-    dirs = os.listdir(path)
-    for file in dirs:
-        statematrix.midiToStatematrix(path+str(file));
+    datafile = open( "data.txt", "rb" )
+    matDict = pickle.load(datafile);
+    datafile.close()
+    print(matDict.keys())
 
 if __name__ == '__main__':
     main()
