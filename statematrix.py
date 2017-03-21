@@ -25,11 +25,6 @@ def midiToStatematrix(midifile):
             statematrix.append(oldNotes)
 
         for i in range(len(pattern)):
-            # print trackPositions
-            # print "track position"+str(trackPositions)
-            # print "pulse"+str(pulse)
-            # print "i"+str(i)
-                # continue
             while pattern[i][trackPositions[i]].tick == pulse:
                 track = pattern[i]
                 position = trackPositions[i]
@@ -49,9 +44,6 @@ def midiToStatematrix(midifile):
         pulse += 1
         if tracksDone(trackPositions):
             break
-    # for array in statematrix:
-    #     printCurrPlaying(array)
-    #     print("----------------------------")
     return statematrix
 
 def tracksDone(trackPositions):
@@ -95,7 +87,7 @@ if __name__ == '__main__':
     matDict = {}
     dirs = os.listdir(path)
     for file in dirs:
-        matDict[path+str(file)] = midiToStatematrix(path+str(file));
+        matDict[path+str(file)] = midiToStatematrix(path+str(file))
     # print(matDict)
     dataFile = open('data.txt', 'wb')
     cPickle.dump(matDict, dataFile, cPickle.HIGHEST_PROTOCOL)
