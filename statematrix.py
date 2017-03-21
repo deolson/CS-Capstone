@@ -92,12 +92,12 @@ def filesToDict(path):
 
 if __name__ == '__main__':
     #dict is essentially python equiv of a hashmap
-    path = "./OneDataSet/"
+    path = "./OneDataset/"
     matDict = {}
     dirs = os.listdir(path)
     for file in dirs:
         matDict[path+str(file)] = midiToStatematrix(path+str(file))
-    print(matDict)
+    # print(matDict)
     dataFile = open('data.txt', 'wb')
     cPickle.dump(matDict, dataFile, cPickle.HIGHEST_PROTOCOL)
     dataFile.close()
