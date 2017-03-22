@@ -18,7 +18,7 @@ def StateMatrixtoMidi(StateMatrix):
     # StateMatrix[key[0]], StateMatrix[key[0]][0], and StateMatrix[key[0]][0][0]
     # are lists
     # StateMatrix[key[0]][0][0][0] is an int
-
+    
     #gets all actual events from StateMatrix
     for i in range(len(StateMatrix[key[0]])):
         for j in range(len(StateMatrix[key[0]][i])):
@@ -26,7 +26,9 @@ def StateMatrixtoMidi(StateMatrix):
                 print(StateMatrix[key[0]][i][j])
 
 
-
+    # [0,0] nothing
+    # [1, 0] held
+    # [1, 1] starting
 
 
 
