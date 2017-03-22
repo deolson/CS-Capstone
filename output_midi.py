@@ -21,14 +21,10 @@ def StateMatrixtoMidi(StateMatrix):
 
     #gets all actual events from StateMatrix
     for i in range(len(StateMatrix[key[0]])):
+        print("--------")
         for j in range(len(StateMatrix[key[0]][i])):
             if 1 in StateMatrix[key[0]][i][j]:
                 print(StateMatrix[key[0]][i][j])
-
-
-
-
-
 
 
 if __name__ == '__main__':

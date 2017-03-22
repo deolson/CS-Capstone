@@ -1,5 +1,5 @@
 import random
-import itertools
+import numpy
 
 batch_len = 1#16*8 #of segments trained on in 16th notes 16*8 = 8 measures -- training speed vs time patterns
 division_len = 16 #step size of measures, we dont want to start a batch in the middle of a measure curr in 16th notes
