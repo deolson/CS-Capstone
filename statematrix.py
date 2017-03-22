@@ -10,8 +10,8 @@ def midiToStatematrix(midifile):
     pattern.make_ticks_abs()
 
     statematrix = []
-    currNotes = [[0,0] for x in range(totalNotes)]
-    # currNotes = [[0,0,getNote(x)] for x in range(totalNotes)]
+    # currNotes = [[0,0] for x in range(totalNotes)]
+    currNotes = [[0,0,getNote(x)] for x in range(totalNotes)]
     trackPositions = [track[0].tick for track in pattern]
 
     resolution = pattern.resolution
@@ -20,13 +20,13 @@ def midiToStatematrix(midifile):
     while True:
         if pulse % resolution/2 == 0:
             oldNotes = currNotes[:]
-            currNotes = [[oldNotes[x][0],0] for x in range(totalNotes)]
-            # currNotes = [[oldNotes[x][0],0,getNote(x)] for x in range(totalNotes)]
+            # currNotes = [[oldNotes[x][0],0] for x in range(totalNotes)]
+            currNotes = [[oldNotes[x][0],0,getNote(x)] for x in range(totalNotes)]
             statematrix.append(oldNotes)
         if pulse % resolution/2 == resolution/4:
             oldNotes = currNotes[:]
-            currNotes = [[oldNotes[x][0],0] for x in range(totalNotes)]
-            # currNotes = [[oldNotes[x][0],0,getNote(x)] for x in range(totalNotes)]
+            # currNotes = [[oldNotes[x][0],0] for x in range(totalNotes)]
+            currNotes = [[oldNotes[x][0],0,getNote(x)] for x in range(totalNotes)]
             statematrix.append(oldNotes)
 
         for i in range(len(pattern)):
@@ -36,11 +36,11 @@ def midiToStatematrix(midifile):
                 event = track[position]
 
                 if midi.NoteOnEvent.is_event(event.statusmsg):
-                    # currNotes[event.pitch] = [1,1,getNote(event.pitch)]
-                    currNotes[event.pitch] = [1,1]
+                    currNotes[event.pitch] = [1,1,getNote(event.pitch)]
+                    # currNotes[event.pitch] = [1,1]
                 if midi.NoteOffEvent.is_event(event.statusmsg):
-                    # currNotes[event.pitch] = [0,0,getNote(event.pitch)]
-                    currNotes[event.pitch] = [0,0]
+                    currNotes[event.pitch] = [0,0,getNote(event.pitch)]
+                    # currNotes[event.pitch] = [0,0]
                 if isinstance(event, midi.TimeSignatureEvent):
                     if event.numerator not in (2,4):
                         return statematrix

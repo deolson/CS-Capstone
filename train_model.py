@@ -1,11 +1,31 @@
 import random
-from itertools import chain
+import itertools
 
-batch_len = 16*8 #of segments trained on in 16th notes 16*8 = 8 measures -- training speed vs time patterns
+batch_len = 1#16*8 #of segments trained on in 16th notes 16*8 = 8 measures -- training speed vs time patterns
 division_len = 16 #step size of measures, we dont want to start a batch in the middle of a measure curr in 16th notes
 binary_len = 4 # number of bits needed to rep division_len
-batch_width = 10
+batch_width = 1
 
+def getWithinAnOct(state, note):
+    withinOct = []
+    for i in range(-12, 13):
+        try:
+            withinOct += state[note+i]
+        except IndexError:
+            withinOct += [0,0]
+    return withinOct
+
+def getSingleVector(note, state, beat, context):
+    position = note % 12
+
+    pitchclass = [0]*12
+    pitchclass[position] = 1
+
+    currNoteContext = context[position:] + context[:position]
+
+    withinAnOct = getWithinAnOct(state,note)
+
+    return [note] + pitchclass + withinAnOct + currNoteContext + beat +[0]
 
 
 def getContext(state):
@@ -15,7 +35,7 @@ def getContext(state):
             pitchclass = note % 12
             context[pitchclass] += 1
     return context
-# assuming 4/4 time. row -
+
 def getBeat(time):
     binary = [int(i) for i in '{0:04b}'.format((time % division_len))]
     for i in range(len(binary)):
@@ -23,15 +43,15 @@ def getBeat(time):
             binary[i] = -1
     return binary
 
-def noteStateSingleToInputForm(time,state):
-    getBeat(time)
-    print(state)
-    print(getContext(state))
-    pass
+def stateToInputVectorArray(time,state):
+    beat = getBeat(time)
+    context = getContext(state)
+    vectors = [getSingleVector(note,state,beat,context) for note in range(len(state))]
+    return vectors
 
 
-def batchToVector(statematrixBatch):
-    inputform = [noteStateSingleToInputForm(time,state) for time,state in enumerate(statematrixBatch)]
+def batchToVectors(statematrixBatch):
+    inputform = [stateToInputVectorArray(time,state) for time,state in enumerate(statematrixBatch)]
     return inputform
 
 def getBatchPieces(matDict):
@@ -40,8 +60,8 @@ def getBatchPieces(matDict):
     #where to start the sample in our statematrix, 0->(end-how big the batch is), only chooseing values at he start of measures
     startindx = random.randrange(0,len(randomStatematrix)-batch_len,division_len)
     batch = randomStatematrix[startindx:startindx+batch_len] #take the batch from the random statematrix
-    modelInput = batchToVector(batch)
+    modelInput = batchToVectors(batch)
+    return batch, modelInput
 
 def trainModel(model,matDict,trainingIterations):
-    # for _ in range(trainingIterations):
-        getBatchPieces(matDict)
+    batch, modelInput = zip(*[getBatchPieces(matDict) for _ in range(batch_width)])
