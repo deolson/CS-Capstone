@@ -1,5 +1,6 @@
 import numpy
 import midi
+import json
 import cPickle
 import os
 
@@ -101,3 +102,7 @@ if __name__ == '__main__':
     dataFile = open('data.txt', 'wb')
     cPickle.dump(matDict, dataFile, cPickle.HIGHEST_PROTOCOL)
     dataFile.close()
+
+    dataJSON = open('dataJSON.json', 'wb')
+    json.dump(matDict, dataJSON)
+    dataJSON.close()
