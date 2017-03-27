@@ -19,19 +19,63 @@ def StateMatrixtoMidi(StateMatrix):
     # are lists
     # StateMatrix[key[0]][0][0][0] is an int
 
-    #gets all actual events from StateMatrix
-    for i in range(len(StateMatrix[key[0]])):
-        print("--------")
-        for j in range(len(StateMatrix[key[0]][i])):
-            if 1 in StateMatrix[key[0]][i][j]:
-                print(StateMatrix[key[0]][i][j])
+    events = StateMatrix[key[0]]
+    for i in range(len(events)):
+        # print("---- %i ----" %(i))
+        for j in range(len(events[i])):
+
+            # [1, 1] = Note started
+            if events[i][j] == [1, 1]:
+                tone1 = str(getNote(j))
+                tone="midi.%s" %(tone1)
+                on = midi.NoteOnEvent(tick=i, velocity=90, pitch=tone)
+                track.append(on)
+                # print("midi.%s" %(str(getNote(j))))
+
+
+            # [1, 0] = note held over from before
+            # if events[i][j] == [1, 0]:
+            #     print(getNote(j))
+
+            # [0, 0] = note not playing
+            if events[i][j] == [0, 0] and events[i - 1][j] != [0, 0]:
+                tone1 = str(getNote(j))
+                tone="midi.%s" %(tone1)
+                off = midi.NoteOffEvent(tick=i, pitch=getNote(j))
+                track.append(off)
+                # print("%s off" %(getNote(j)))
+
+    eot = midi.EndOfTrackEvent(tick=len(events))
+    track.append(eot)
+    midi.write_midifile("output.mid", pattern)
+
+
+def getNote(intNote):
+    oct = intNote/12
+    letter = switch(intNote%12)
+    return letter+str(oct)
+
+def switch(x):
+    return {
+        0 : 'C_',
+        1 : 'C#_',
+        2 : 'D_',
+        3 : 'D#_',
+        4 : 'E_',
+        5 : 'F_',
+        6 : 'F#_',
+        7 : 'G_',
+        8 : 'G#_',
+        9 : 'A_',
+        10 : 'A#_',
+        11 : 'B_',
+    }[x]
+
+
 
 
 if __name__ == '__main__':
     DataFile = open("dataJSON.json", "rb")
     StateMatrix = json.load(DataFile)
     DataFile.close()
-    # speckey = StateMatrix.keys()
-    # print(speckey)
-    # print(StateMatrix[speckey[0]][20])
     StateMatrixtoMidi(StateMatrix)
