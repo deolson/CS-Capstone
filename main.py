@@ -2,6 +2,7 @@ import pickle
 import network_model
 import train_model
 
+
 def main():
     datafile = open( "data.txt", "rb" )
     matDict = pickle.load(datafile);

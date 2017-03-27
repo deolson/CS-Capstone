@@ -1,7 +1,7 @@
 import random
 import numpy
 
-batch_len = 1#16*8 #of segments trained on in 16th notes 16*8 = 8 measures -- training speed vs time patterns
+batch_len = 2#16*8 #of segments trained on in 16th notes 16*8 = 8 measures -- training speed vs time patterns
 division_len = 16 #step size of measures, we dont want to start a batch in the middle of a measure curr in 16th notes
 binary_len = 4 # number of bits needed to rep division_len
 batch_width = 1
@@ -65,3 +65,5 @@ def getBatchPieces(matDict):
 
 def trainModel(model,matDict,trainingIterations):
     batch, modelInput = zip(*[getBatchPieces(matDict) for _ in range(batch_width)])
+    ab = numpy.array(batch)
+    ami = numpy.array(modelInput)
