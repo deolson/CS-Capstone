@@ -26,9 +26,7 @@ def StateMatrixtoMidi(StateMatrix):
 
             # [1, 1] = Note started
             if events[i][j] == [1, 1]:
-                tone1 = str(getNote(j))
-                tone="midi.%s" %(tone1)
-                on = midi.NoteOnEvent(tick=i, velocity=90, pitch=tone)
+                on = midi.NoteOnEvent(tick=i, velocity=90, pitch=j)
                 track.append(on)
                 # print("midi.%s" %(str(getNote(j))))
 
@@ -39,14 +37,13 @@ def StateMatrixtoMidi(StateMatrix):
 
             # [0, 0] = note not playing
             if events[i][j] == [0, 0] and events[i - 1][j] != [0, 0]:
-                tone1 = str(getNote(j))
-                tone="midi.%s" %(tone1)
-                off = midi.NoteOffEvent(tick=i, pitch=getNote(j))
+                off = midi.NoteOffEvent(tick=i, pitch=j)
                 track.append(off)
                 # print("%s off" %(getNote(j)))
 
     eot = midi.EndOfTrackEvent(tick=len(events))
     track.append(eot)
+    print pattern
     midi.write_midifile("output.mid", pattern)
 
 

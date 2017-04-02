@@ -67,3 +67,4 @@ def trainModel(model,matDict,trainingIterations):
     batch, modelInput = zip(*[getBatchPieces(matDict) for _ in range(batch_width)])
     ab = numpy.array(batch)
     ami = numpy.array(modelInput)
+    print(batch)
