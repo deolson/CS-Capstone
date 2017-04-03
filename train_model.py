@@ -63,7 +63,7 @@ def getBatchPieces(matDict):
     modelInput = batchToVectors(batch)
     return batch, modelInput
 
-def trainModel(model,matDict,trainingIterations):
+def getModelInputs(model,matDict,trainingIterations):
     batch, modelInput = zip(*[getBatchPieces(matDict) for _ in range(batch_width)])
     ab = numpy.array(batch)
     ami = numpy.array(modelInput)
