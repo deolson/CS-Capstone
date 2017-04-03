@@ -1,10 +1,12 @@
 import random
 import numpy
+from main import matDict
+numpy.set_printoptions(threshold=numpy.nan)
 
 batch_len = 2#16*8 #of segments trained on in 16th notes 16*8 = 8 measures -- training speed vs time patterns
 division_len = 16 #step size of measures, we dont want to start a batch in the middle of a measure curr in 16th notes
 binary_len = 4 # number of bits needed to rep division_len
-batch_width = 1
+batch_width = 2
 
 def getWithinAnOct(state, note):
     withinOct = []
@@ -63,8 +65,11 @@ def getBatchPieces(matDict):
     modelInput = batchToVectors(batch)
     return batch, modelInput
 
-def getModelInputs(model,matDict,trainingIterations):
+def getModelInputs():
     batch, modelInput = zip(*[getBatchPieces(matDict) for _ in range(batch_width)])
-    ab = numpy.array(batch)
-    ami = numpy.array(modelInput)
-    print(batch)
+    batch = numpy.array(batch)
+
+    modelInput = numpy.array(modelInput)
+    modelInput = modelInput[:,0:-1]
+    tensorShapeModelInput = modelInput.transpose(1,0,2,3).reshape(batch_len-1,batch_width*128,80)
+    return batch, tensorShapeModelInput
