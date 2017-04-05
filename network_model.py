@@ -1,6 +1,7 @@
 from tensorflow.contrib.rnn import LSTMCell, MultiRNNCell, BasicLSTMCell
 import tensorflow as tf
 from train_model import getModelInputs, batch_len, division_len, binary_len, batch_width
+
 class choraleModel(object):
 
     def __init__(self, is_training, timeNeurons, timeLayers, noteNeurons, noteLayers, dropout):
