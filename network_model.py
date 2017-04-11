@@ -11,12 +11,13 @@ class choraleModel(object):
             modelInput = tf.placeholder(tf.float32, [batch_len-1, batch_width*128, 80])
 
             timeStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(timeNeurons[0],state_is_tuple=True) for _ in range(timeLayers)], state_is_tuple=True)
+
             val, hidden_state = tf.nn.dynamic_rnn(timeStack, modelInput, dtype=tf.float32, time_major=True)
 
 
-            # print("-----------")
-            # print(val.eval())
-            # print("-----------")
+            print("-----------")
+            print(val.eval())
+            print("-----------")
 
             # W = tf.Variable(tf.zeros([batch_len-1, 80, 80]))
             # y = tf.nn.softmax(tf.matmul(modelInput,W))
