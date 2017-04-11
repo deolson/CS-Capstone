@@ -11,7 +11,9 @@ class choraleModel(object):
             modelInput = tf.placeholder(tf.float32, [batch_len-1, batch_width*128, 80])
 
             timeStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(timeNeurons[0],state_is_tuple=True) for _ in range(timeLayers)], state_is_tuple=True)
-            val, hidden_state = tf.nn.dynamic_rnn(timeStack, modelInput, dtype=tf.float32, time_major=True)
+            allOutputs, _ = tf.nn.dynamic_rnn(timeStack, modelInput, dtype=tf.float32, time_major=True)
+
+            finalOutput = allOutputs[-1]
 
 
             # print("-----------")
@@ -32,7 +34,7 @@ class choraleModel(object):
                 inputBatch, inputModelInput = getModelInputs()
                 # train_step.run([optimizer,cross_entropy],feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 # train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                print(sess.run([hidden_state],feed_dict={batch: inputBatch, modelInput:inputModelInput}))
+                print(sess.run([finalOutput],feed_dict={batch: inputBatch, modelInput:inputModelInput}))
                 # print(val.eval())
 
             sess.close()
