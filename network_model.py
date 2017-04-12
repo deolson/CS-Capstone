@@ -1,6 +1,7 @@
 from tensorflow.contrib.rnn import LSTMCell, MultiRNNCell, BasicLSTMCell
 import tensorflow as tf
 from train_model import getModelInputs, batch_len, division_len, binary_len, batch_width
+import numpy as numpy
 
 class choraleModel(object):
 
@@ -8,17 +9,26 @@ class choraleModel(object):
         iterations = 1;
         with tf.Session() as sess:
             batch = tf.placeholder(tf.float32, [batch_width, batch_len, 128, 2])
+            # batch = tf.placeholder(tf.float32, [2, 2, 1, 2])
+
             modelInput = tf.placeholder(tf.float32, [batch_len-1, batch_width*128, 80])
+            # modelInput = tf.placeholder(tf.float32, [3-1, 2, 2])
 
             timeStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(timeNeurons[0],state_is_tuple=True) for _ in range(timeLayers)], state_is_tuple=True)
-            allOutputs, _ = tf.nn.dynamic_rnn(timeStack, modelInput, dtype=tf.float32, time_major=True)
+            timeOutputs, _ = tf.nn.dynamic_rnn(timeStack, modelInput, dtype=tf.float32, time_major=True)
 
-            finalOutput = allOutputs[-1]
+            finalOutput = timeOutputs[-1]
 
 
-            # print("-----------")
-            # print(val.eval())
-            # print("-----------")
+
+            # noteStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(noteNeurons[i],state_is_tuple=True) for i in range(noteLayers)], state_is_tuple=True)
+            # noteOutputs, _ = tf.nn.dynamic_rnn(noteStack, modelInput, dtype=tf.float32, time_major=True)
+
+
+
+            print("-----------")
+            print(timeOutputs.shape)
+            print("-----------")
 
             # W = tf.Variable(tf.zeros([batch_len-1, 80, 80]))
             # y = tf.nn.softmax(tf.matmul(modelInput,W))
@@ -32,9 +42,10 @@ class choraleModel(object):
             sess.run(tf.global_variables_initializer())
             for i in range(iterations):
                 inputBatch, inputModelInput = getModelInputs()
+
                 # train_step.run([optimizer,cross_entropy],feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 # train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                print(sess.run([finalOutput],feed_dict={batch: inputBatch, modelInput:inputModelInput}))
+                print(len(sess.run([timeOutputs],feed_dict={batch: inputBatch, modelInput:inputModelInput})))
                 # print(val.eval())
 
             sess.close()
