@@ -19,12 +19,8 @@ class choraleModel(object):
 
             finalOutput = timeOutputs[-1]
 
-
-
             # noteStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(noteNeurons[i],state_is_tuple=True) for i in range(noteLayers)], state_is_tuple=True)
             # noteOutputs, _ = tf.nn.dynamic_rnn(noteStack, modelInput, dtype=tf.float32, time_major=True)
-
-
 
             print("-----------")
             print(timeOutputs.shape)
