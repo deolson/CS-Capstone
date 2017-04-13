@@ -9,31 +9,31 @@ class choraleModel(object):
         iterations = 1;
         with tf.Session() as sess:
             batch = tf.placeholder(tf.float32, [batch_width, batch_len, 128, 2])
-            # batch = tf.placeholder(tf.float32, [2, 2, 1, 2])
 
             modelInput = tf.placeholder(tf.float32, [batch_len-1, batch_width*128, 80])
-            # modelInput = tf.placeholder(tf.float32, [3-1, 2, 2])
 
             timeStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(timeNeurons[0],state_is_tuple=True) for _ in range(timeLayers)], state_is_tuple=True)
-            timeOutputs, timeOutputs2 = tf.nn.dynamic_rnn(timeStack, modelInput, dtype=tf.float32, time_major=True)
+            timeOutputs, d = tf.nn.dynamic_rnn(timeStack, modelInput, dtype=tf.float32, time_major=True)
 
-            finalOutput = timeOutputs[-1]
-
+            # hiddenNum = timeOutputs.shape[2]
             # noteStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(noteNeurons[i],state_is_tuple=True) for i in range(noteLayers)], state_is_tuple=True)
             # noteOutputs, _ = tf.nn.dynamic_rnn(noteStack, modelInput, dtype=tf.float32, time_major=True)
+            timeFin = tf.reshape(timeOutputs, [batch_len-1,batch_width,128,300])
+            timeFin = tf.transpose(timeFin, [2,1,0,3])
+            timeFin = tf.reshape(timeFin, [128,batch_width*(batch_len-1),300])
 
-            print("-----------")
-            print(timeOutputs)
-            print("-----------")
+            tmp = numpy.zeros(shape=(1,batch_width*(batch_len-1),2))
+            actual_note = tf.stack(tmp)
+            # tf.fill()
 
-            # W = tf.Variable(tf.zeros([batch_len-1, 80, 80]))
-            # y = tf.nn.softmax(tf.matmul(modelInput,W))
+            # print("-----------")
+            print(actual_note)
+            # print("-----------")
+            # print(d)
+
             # cross_entropy = tf.reduce_mean(-tf.reduce_sum(modelInput * tf.log(y), reduction_indices=[1]))
-
-
             # cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=[1.0], logits=[1.0]))
             # train_step = 0
-
 
             sess.run(tf.global_variables_initializer())
             for i in range(iterations):
@@ -41,11 +41,11 @@ class choraleModel(object):
 
                 # train_step.run([optimizer,cross_entropy],feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 # train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                print(sess.run([timeOutputs2],feed_dict={batch: inputBatch, modelInput:inputModelInput}))
+                sess.run([timeOutputs],feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 print("==================================")
                 print("==================================")
                 print("==================================")
-                print(sess.run([timeOutputs],feed_dict={batch: inputBatch, modelInput:inputModelInput}))
+                print(sess.run([actual_note],feed_dict={batch: inputBatch, modelInput:inputModelInput}))
                 # print(val.eval())
 
             sess.close()
