@@ -12,8 +12,9 @@ class choraleModel(object):
 
             modelInput = tf.placeholder(tf.float32, [batch_len-1, batch_width*128, 80])
 
-            timeStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(timeNeurons[0],state_is_tuple=True) for _ in range(timeLayers)], state_is_tuple=True)
-            timeOutputs, d = tf.nn.dynamic_rnn(timeStack, modelInput, dtype=tf.float32, time_major=True)
+            with tf.variable_scope("time"):
+                timeStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(timeNeurons[0],state_is_tuple=True) for _ in range(timeLayers)], state_is_tuple=True)
+                timeOutputs, _ = tf.nn.dynamic_rnn(timeStack, modelInput, dtype=tf.float32, time_major=True)
 
             # hiddenNum = timeOutputs.shape[2]
             # noteStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(noteNeurons[i],state_is_tuple=True) for i in range(noteLayers)], state_is_tuple=True)
@@ -23,11 +24,24 @@ class choraleModel(object):
             timeFin = tf.reshape(timeFin, [128,batch_width*(batch_len-1),300])
 
             tmp = numpy.zeros(shape=(1,batch_width*(batch_len-1),2))
-            actual_note = tf.stack(tmp)
+            tmp = tf.stack(tmp)
+            tmp = tf.cast(tmp, tf.float32)
+
+            actual_note = tf.transpose(batch[:,1:,0:-1,:], [2,0,1,3])
+            actual_note = tf.reshape(actual_note, [127,batch_width*batch_width,2])
+            actual_note = tf.concat([tmp,actual_note],0)
+
+            noteLayer_input = tf.concat([timeFin,actual_note],2)
+
+            with tf.variable_scope("note"):
+                noteStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(noteNeurons[i],state_is_tuple=True) for i in range(noteLayers)], state_is_tuple=True)
+                noteOutputs, _ = tf.nn.dynamic_rnn(noteStack, noteLayer_input, dtype=tf.float32, time_major=True)
+
+
             # tf.fill()
 
             # print("-----------")
-            print(actual_note)
+            # print(actual_note)
             # print("-----------")
             # print(d)
 
@@ -39,49 +53,14 @@ class choraleModel(object):
             for i in range(iterations):
                 inputBatch, inputModelInput = getModelInputs()
 
+
                 # train_step.run([optimizer,cross_entropy],feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 # train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                sess.run([timeOutputs],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                # sess.run([timeOutputs],feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 print("==================================")
                 print("==================================")
                 print("==================================")
-                print(sess.run([actual_note],feed_dict={batch: inputBatch, modelInput:inputModelInput}))
+                print(sess.run([noteLayer_input],feed_dict={batch: inputBatch, modelInput:inputModelInput})[0].shape)
                 # print(val.eval())
 
             sess.close()
-
-
-
-
-
-
-
-
-
-
-
-
-        # def lstm_cell():
-        #         return tf.contrib.rnn.LSTMCell(timeNeurons[0], forget_bias=0.0, state_is_tuple=True)
-
-        # attn_cell = lstm_cell
-        # if is_training:
-        #     def attn_cell():
-        #          return tf.contrib.rnn.DropoutWrapper(lstm_cell(), output_keep_prob=0.5)
-        #
-        # cellStack = tf.contrib.rnn.MultiRNNCell([attn_cell()*timeLayers], state_is_tuple=True)
-        #
-        # self._initial_state = cellStack.zero_state(batch_width, tf.float32)
-        #
-        # #inputs = some way to get all the inputs into this vector
-        # if is_training:
-        #     inputs = tf.nn.dropout(inputs, config.keep_prob)
-        #
-        # outputs = []
-        # state = self._initial_state
-        # with tf.variable_scope("RNN"):
-        #     inputs = tf.unstack(inputs, num=timeLayers, axis=1)
-        #     outputs, state = tf.contrib.rnn.static_rnn(cell, inputs, initial_state=self._initial_state)
-
-        # if not is_training:
-        #     return
