@@ -67,6 +67,8 @@ class choraleModel(object):
             # train_step = 0
 
             sess.run(tf.global_variables_initializer())
+            train_writer = tf.summary.FileWriter('~.', sess.graph)
+
             for i in range(iterations):
                 inputBatch, inputModelInput = getModelInputs()
 
@@ -79,7 +81,12 @@ class choraleModel(object):
                 print("==================================")
                 print(sess.run([noteOutputs],feed_dict={batch: inputBatch, modelInput:inputModelInput})[0].shape)
                 # print(val.eval())
+                merged = tf.summary.merge_all()
+                train_writer.add_summary(merged,i)
 
+            saver = tf.train.Saver()
+
+            saver.save(sess,'~./model.ckpt', i)
             sess.close()
 
     def timeFun():
