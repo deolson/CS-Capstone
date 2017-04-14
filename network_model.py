@@ -50,8 +50,13 @@ class choraleModel(object):
             noteLayer_input = tf.concat([timeFin,actual_note],2)
 
             with tf.variable_scope("note"):
-                noteStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(noteNeurons[i],state_is_tuple=True) for i in range(noteLayers)], state_is_tuple=False)
+                noteStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(noteNeurons[i],state_is_tuple=True) for i in range(noteLayers)], state_is_tuple=True)
                 noteOutputs, _ = tf.nn.dynamic_rnn(noteStack, noteLayer_input, dtype=tf.float32, time_major=False)
+
+            noteFine = tf.reshape(noteOutputs, [128,batch_width,(batch_len-1),2])
+            noteFine= tf.transpose(noteFin, [1,2,0,3])
+
+
 
             # print("-----------")
             # print(actual_note)
@@ -68,11 +73,11 @@ class choraleModel(object):
 
                 # train_step.run([optimizer,cross_entropy],feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 # train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                # sess.run([timeOutputs],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                # print(sess.run([noteOutputs],feed_dict={batch: inputBatch, modelInput:inputModelInput}))
                 print("==================================")
                 print("==================================")
                 print("==================================")
-                print(sess.run([noteLayer_input],feed_dict={batch: inputBatch, modelInput:inputModelInput})[0].shape)
+                print(sess.run([noteFine],feed_dict={batch: inputBatch, modelInput:inputModelInput})[0].shape)
                 # print(val.eval())
 
             sess.close()
