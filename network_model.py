@@ -77,7 +77,7 @@ class choraleModel(object):
                 print("==================================")
                 print("==================================")
                 print("==================================")
-                print(sess.run([noteFine],feed_dict={batch: inputBatch, modelInput:inputModelInput})[0].shape)
+                print(sess.run([noteOutputs],feed_dict={batch: inputBatch, modelInput:inputModelInput})[0].shape)
                 # print(val.eval())
 
             sess.close()
