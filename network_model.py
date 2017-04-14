@@ -53,8 +53,8 @@ class choraleModel(object):
                 noteStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(noteNeurons[i],state_is_tuple=True) for i in range(noteLayers)], state_is_tuple=True)
                 noteOutputs, _ = tf.nn.dynamic_rnn(noteStack, noteLayer_input, dtype=tf.float32, time_major=False)
 
-            noteFine = tf.reshape(noteOutputs, [128,batch_width,(batch_len-1),2])
-            noteFine= tf.transpose(noteFin, [1,2,0,3])
+            # noteFine = tf.reshape(noteOutputs, [128,batch_width,(batch_len-1),2])
+            # noteFine= tf.transpose(noteFin, [1,2,0,3])
 
 
 
