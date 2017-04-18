@@ -3,6 +3,44 @@ import tensorflow as tf
 from train_model import getModelInputs, batch_len, division_len, binary_len, batch_width
 import numpy as numpy
 
+def weight_variable(shape):
+    initial = tf.truncated_normal(shape, stddev=0.1)
+    return tf.Variable(initial)
+
+def bias_variable(shape):
+    initial = tf.truncated_normal(shape=shape, stddev=0.01)
+    return tf.Variable(initial)
+
+def variable_summaries(var):
+    with tf.name_scope('summaries'):
+      mean = tf.reduce_mean(var)
+    #   tf.summary.scalar('mean', mean)
+      with tf.name_scope('stddev'):
+        stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+    #   tf.summary.scalar('stddev', stddev)
+    #   tf.summary.scalar('max', tf.reduce_max(var))
+    #   tf.summary.scalar('min', tf.reduce_min(var))
+    #   tf.summary.histogram('histogram', var)
+
+def nn_layer(input_tensor, input_dim, output_dim, layer_name, act=tf.nn.sigmoid):
+    with tf.name_scope(layer_name):
+      with tf.name_scope('weights'):
+        weights = weight_variable([input_dim, output_dim])
+        variable_summaries(weights)
+      with tf.name_scope('biases'):
+        biases = bias_variable([output_dim])
+        variable_summaries(biases)
+      with tf.name_scope('Wx_plus_b'):
+        # print(input_tensor.get_shape().ndims)
+        print(input_tensor.shape)
+        tensDot = tf.tensordot(input_tensor, weights, [[2],[0]])
+        print(tensDot)
+        # tensDot = tensDot+biases
+        # tf.summary.histogram('pre_activations', preactivate)
+    #   activations = act(preactivate, name='activation')
+    #   tf.summary.histogram('activations', activations)
+      return act((tensDot+biases))
+
 class choraleModel(object):
 
     def __init__(self, is_training, timeNeurons, timeLayers, noteNeurons, noteLayers, dropout):
@@ -57,17 +95,21 @@ class choraleModel(object):
                 noteStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(noteNeurons[i],state_is_tuple=True) for i in range(noteLayers)], state_is_tuple=True)
                 noteOutputs, _ = tf.nn.dynamic_rnn(noteStack, noteLayer_input, dtype=tf.float32, time_major=False)
 
+            x = tf.Variable(tf.zeros([10,784]))
+
+            sig_layer = nn_layer(noteOutputs, 50 , 2 , layer_name="sigmoid")
+
             # noteFine = tf.reshape(noteOutputs, [128,batch_width,(batch_len-1),2])
             # noteFine= tf.transpose(noteFin, [1,2,0,3])
 
+            # print((numpy.random.RandomState(1234).standard_normal((2,)) * 1. / 2).shape)
 
 
             # print("-----------")
             # print(actual_note)
             # print("-----------")
 
-            # cross_entropy = tf.reduce_mean(-tf.reduce_sum(modelInput * tf.log(y), reduction_indices=[1]))
-            # cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=[1.0], logits=[1.0]))
+            # cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=actual_note, logits=noteOutputs))
             # train_step = 0
 
             sess.run(tf.global_variables_initializer())
@@ -83,7 +125,7 @@ class choraleModel(object):
                 print("==================================")
                 print("==================================")
                 print("==================================")
-                print(sess.run([noteOutputs],feed_dict={batch: inputBatch, modelInput:inputModelInput})[0].shape)
+                print(sess.run([sig_layer],feed_dict={batch: inputBatch, modelInput:inputModelInput})[0])
                 # print(val.eval())
                 merged = tf.summary.merge_all()
                 train_writer.add_summary(merged,i)
