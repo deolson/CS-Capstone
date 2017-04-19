@@ -95,20 +95,24 @@ class choraleModel(object):
                 noteStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(noteNeurons[i],state_is_tuple=True) for i in range(noteLayers)], state_is_tuple=True)
                 noteOutputs, _ = tf.nn.dynamic_rnn(noteStack, noteLayer_input, dtype=tf.float32, time_major=False)
 
-            x = tf.Variable(tf.zeros([10,784]))
-
             sig_layer = nn_layer(noteOutputs, 50 , 2 , layer_name="sigmoid")
 
             noteFin = tf.reshape(sig_layer, [128,batch_width,(batch_len-1),2])
             noteFin= tf.transpose(noteFin, [1,2,0,3])
 
-            actual_note_padded = tf.pad(batch[:,1:,:,0], [[0,0],[0,0],[0,1]], "CONSTANT")
-            b = batch[:,1:,:,0]
+            actual_note_padded = tf.expand_dims(batch[:,1:,:,0],3)
+            mask = tf.concat([tf.ones_like(actual_note_padded, optimize=True),actual_note_padded],axis=3)
 
-            cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=actual_note, logits=sig_layer))
-            # train_step = tf.train.RMSPropOptimizer(0.1).minimize(cross_entropy)
+
+
+            eps = tf.constant(1.19209e-07)
+            percentages = mask * tf.log( 2 * noteFin * batch[:,1:] - noteFin - batch[:,1:] + 1 + eps )
+            # cost = T.neg(T.sum(loglikelihoods))
+
+            # cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=actual_note, logits=sig_layer))
+            # train_step = tf.train.RMSPropOptimizer(0.1).minimize(cost)
             # train_step = tf.train.RMSPropOptimizer(0.0001).minimize(cross_entropy)
-            train_step = tf.train.AdadeltaOptimizer(learning_rate=0.1, epsilon=1e-8).minimize(cross_entropy)
+            # train_step = tf.train.AdadeltaOptimizer(learning_rate=0.1, epsilon=1e-8).minimize(cross_entropy)
 
             correct_prediction = tf.equal(tf.argmax(actual_note,1), tf.argmax(sig_layer,1))
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
@@ -120,14 +124,14 @@ class choraleModel(object):
                 inputBatch, inputModelInput = getModelInputs()
                 # print(inputBatch)
                 # print(inputModelInput)
-                if i % 5 == 0:
-                    train_accuracy = accuracy.eval(feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                    print("step %d, training accuracy %g"%(i, train_accuracy))
-                train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                an = sess.run([actual_note_padded],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                # if i % 5 == 0:
+                #     train_accuracy = accuracy.eval(feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                #     print("step %d, training accuracy %g"%(i, train_accuracy))
+                # train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                # sess.run([percentages],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                an = sess.run([percentages],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                print(an[0])
                 print(an[0].shape)
-                # an = sess.run([sig_layer],feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                # print(an[0].shape)
 
                 merged = tf.summary.merge_all()
                 train_writer.add_summary(merged,i)
