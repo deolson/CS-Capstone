@@ -4,6 +4,7 @@ import json
 import cPickle
 import os
 
+batch_len = 3;
 totalNotes = 128;
 
 def midiToStatematrix(midifile):
@@ -54,6 +55,7 @@ def midiToStatematrix(midifile):
         pulse += 1
         if tracksDone(trackPositions):
             break
+    print(len(statematrix))
     return statematrix
 
 def tracksDone(trackPositions):
@@ -93,12 +95,13 @@ def filesToDict(path):
 
 if __name__ == '__main__':
     #dict is essentially python equiv of a hashmap
-    path = "./MedDataset/"
+    path = "./LDataset/"
     matDict = {}
     dirs = os.listdir(path)
     for file in dirs:
-        matDict[path+str(file)] = midiToStatematrix(path+str(file))
-    # print(matDict)
+        statematrix = midiToStatematrix(path+str(file))
+        if len(statematrix) > batch_len:
+            matDict[path+str(file)] = statematrix
     dataFile = open('data.txt', 'wb')
     cPickle.dump(matDict, dataFile, cPickle.HIGHEST_PROTOCOL)
     dataFile.close()

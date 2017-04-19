@@ -45,7 +45,7 @@ class choraleModel(object):
 
     def __init__(self, is_training, timeNeurons, timeLayers, noteNeurons, noteLayers, dropout):
 
-        iterations = 101;
+        iterations = 1;
 
         with tf.Session() as sess:
             # inputs to the model, batch is a submatrix of the statematrix that is fitted to our batchs and modelInput is the note vectors
@@ -102,13 +102,14 @@ class choraleModel(object):
             noteFin = tf.reshape(sig_layer, [128,batch_width,(batch_len-1),2])
             noteFin= tf.transpose(noteFin, [1,2,0,3])
 
-            # actual_note_padded = tf.pad(batch[:,1:,:,0],[[0,0],[0,0],[0,0],[0,0]])
-
+            actual_note_padded = tf.pad(batch[:,1:,:,0], [[0,0],[0,0],[0,1]], "CONSTANT")
+            b = batch[:,1:,:,0]
 
             cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=actual_note, logits=sig_layer))
             # train_step = tf.train.RMSPropOptimizer(0.1).minimize(cross_entropy)
-            train_step = tf.train.RMSPropOptimizer(0.01).minimize(cross_entropy)
-            # train_step = tf.train.AdadeltaOptimizer(0.001).minimize(cross_entropy)
+            # train_step = tf.train.RMSPropOptimizer(0.0001).minimize(cross_entropy)
+            train_step = tf.train.AdadeltaOptimizer(learning_rate=0.1, epsilon=1e-8).minimize(cross_entropy)
+
             correct_prediction = tf.equal(tf.argmax(actual_note,1), tf.argmax(sig_layer,1))
             accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
@@ -123,6 +124,10 @@ class choraleModel(object):
                     train_accuracy = accuracy.eval(feed_dict={batch: inputBatch, modelInput:inputModelInput})
                     print("step %d, training accuracy %g"%(i, train_accuracy))
                 train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                an = sess.run([actual_note_padded],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                print(an[0].shape)
+                # an = sess.run([sig_layer],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                # print(an[0].shape)
 
                 merged = tf.summary.merge_all()
                 train_writer.add_summary(merged,i)
