@@ -45,7 +45,7 @@ class choraleModel(object):
 
     def __init__(self, is_training, timeNeurons, timeLayers, noteNeurons, noteLayers, dropout):
 
-        iterations = 1;
+        iterations = 101;
 
         with tf.Session() as sess:
             # inputs to the model, batch is a submatrix of the statematrix that is fitted to our batchs and modelInput is the note vectors
@@ -78,7 +78,7 @@ class choraleModel(object):
 
             # next we take the actual notes that were played in the form (batch, time, notes, 2) and ignore the first time: 0
             # we ignore time: 0 because we are passing in the notes that where actually played at the next time step
-            # we the transpose that to (notes,batch,time,2) -> (127, batch*time,2)
+            # we then transpose that to (notes,batch,time,2) -> (127, batch*time,2)
             # then pad the first layer with 0s from tmp to get (notes,time*batch,2)
             # now our actual_notes match the dimensions of our timeFin dimensions
             with tf.name_scope('reshaping'):
@@ -99,34 +99,31 @@ class choraleModel(object):
 
             sig_layer = nn_layer(noteOutputs, 50 , 2 , layer_name="sigmoid")
 
-            # noteFine = tf.reshape(noteOutputs, [128,batch_width,(batch_len-1),2])
-            # noteFine= tf.transpose(noteFin, [1,2,0,3])
+            noteFin = tf.reshape(sig_layer, [128,batch_width,(batch_len-1),2])
+            noteFin= tf.transpose(noteFin, [1,2,0,3])
 
-            # print((numpy.random.RandomState(1234).standard_normal((2,)) * 1. / 2).shape)
+            # actual_note_padded = tf.pad(batch[:,1:,:,0],[[0,0],[0,0],[0,0],[0,0]])
 
 
-            # print("-----------")
-            # print(actual_note)
-            # print("-----------")
-
-            # cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=actual_note, logits=noteOutputs))
-            # train_step = 0
+            cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=actual_note, logits=sig_layer))
+            # train_step = tf.train.RMSPropOptimizer(0.1).minimize(cross_entropy)
+            train_step = tf.train.RMSPropOptimizer(0.01).minimize(cross_entropy)
+            # train_step = tf.train.AdadeltaOptimizer(0.001).minimize(cross_entropy)
+            correct_prediction = tf.equal(tf.argmax(actual_note,1), tf.argmax(sig_layer,1))
+            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
             sess.run(tf.global_variables_initializer())
             train_writer = tf.summary.FileWriter('~.', sess.graph)
 
             for i in range(iterations):
                 inputBatch, inputModelInput = getModelInputs()
+                # print(inputBatch)
+                # print(inputModelInput)
+                if i % 5 == 0:
+                    train_accuracy = accuracy.eval(feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                    print("step %d, training accuracy %g"%(i, train_accuracy))
+                train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
 
-
-                # train_step.run([optimizer,cross_entropy],feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                # train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                # print(sess.run([noteOutputs],feed_dict={batch: inputBatch, modelInput:inputModelInput}))
-                print("==================================")
-                print("==================================")
-                print("==================================")
-                print(sess.run([sig_layer],feed_dict={batch: inputBatch, modelInput:inputModelInput})[0])
-                # print(val.eval())
                 merged = tf.summary.merge_all()
                 train_writer.add_summary(merged,i)
 
@@ -134,6 +131,3 @@ class choraleModel(object):
 
             saver.save(sess,'~./model.ckpt', i)
             sess.close()
-
-    def timeFun():
-        pass
