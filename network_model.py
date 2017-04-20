@@ -15,13 +15,8 @@ def bias_variable(shape):
 def variable_summaries(var):
     with tf.name_scope('summaries'):
       mean = tf.reduce_mean(var)
-    #   tf.summary.scalar('mean', mean)
       with tf.name_scope('stddev'):
         stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
-    #   tf.summary.scalar('stddev', stddev)
-    #   tf.summary.scalar('max', tf.reduce_max(var))
-    #   tf.summary.scalar('min', tf.reduce_min(var))
-    #   tf.summary.histogram('histogram', var)
 
 def nn_layer(input_tensor, input_dim, output_dim, layer_name, act=tf.nn.sigmoid):
     with tf.name_scope(layer_name):
@@ -32,21 +27,14 @@ def nn_layer(input_tensor, input_dim, output_dim, layer_name, act=tf.nn.sigmoid)
         biases = bias_variable([output_dim])
         variable_summaries(biases)
       with tf.name_scope('Wx_plus_b'):
-        # print(input_tensor.get_shape().ndims)
-        print(input_tensor.shape)
         tensDot = tf.tensordot(input_tensor, weights, [[2],[0]])
-        print(tensDot)
-        # tensDot = tensDot+biases
-        # tf.summary.histogram('pre_activations', preactivate)
-    #   activations = act(preactivate, name='activation')
-    #   tf.summary.histogram('activations', activations)
-      return act((tensDot+biases))
+      return act((tensDot+biases), name='activation')
 
 class choraleModel(object):
 
     def __init__(self, is_training, timeNeurons, timeLayers, noteNeurons, noteLayers, dropout):
 
-        iterations = 30001;
+        iterations = 101;
 
         with tf.Session() as sess:
             # inputs to the model, batch is a submatrix of the statematrix that is fitted to our batchs and modelInput is the note vectors
@@ -96,6 +84,7 @@ class choraleModel(object):
                 noteStack = tf.contrib.rnn.MultiRNNCell([LSTMCell(noteNeurons[i],state_is_tuple=True) for i in range(noteLayers)], state_is_tuple=True)
                 noteOutputs, _ = tf.nn.dynamic_rnn(noteStack, noteLayer_input, dtype=tf.float32, time_major=False)
 
+
             sig_layer = nn_layer(noteOutputs, 50 , 2 , layer_name="sigmoid")
 
             noteFin = tf.reshape(sig_layer, [128,batch_width,(batch_len-1),2])
@@ -109,8 +98,6 @@ class choraleModel(object):
             # playProb = tf.reshape(playProb, [128*(batch_len-1)*batch_width,1])
 
             articProb = sig_layer[:,:,1:]
-
-
 
             actual_note_padded = tf.expand_dims(batch[:,1:,:,0],3)
             mask = tf.concat([tf.ones_like(actual_note_padded, optimize=True),actual_note_padded],axis=3)
@@ -126,27 +113,20 @@ class choraleModel(object):
             train_step = tf.train.RMSPropOptimizer(0.001).minimize(cost)
             # train_step = tf.train.AdadeltaOptimizer(learning_rate=0.1, epsilon=1e-6).minimize(cost)
 
-            # correct_prediction = tf.equal(tf.argmax(actual_note,1), tf.argmax(sig_layer,1))
-            # accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-
             sess.run(tf.global_variables_initializer())
             train_writer = tf.summary.FileWriter('~.', sess.graph)
 
             for i in range(iterations):
                 inputBatch, inputModelInput = getModelInputs()
-                # print(inputBatch)
-                # print(inputModelInput)
                 if i % 10 == 1:
                     train_accuracy = cost.eval(feed_dict={batch: inputBatch, modelInput:inputModelInput})
                     print("step %d, training accuracy %g"%(i, train_accuracy))
                 train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                # sess.run([percentages],feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 if i == (iterations-1):
                     an = sess.run([actualPlayProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
                     ad = sess.run([playProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
                     print(an[0])
                     print(ad[0])
-                    # print(an[0].shape)
 
                 merged = tf.summary.merge_all()
                 train_writer.add_summary(merged,i)
