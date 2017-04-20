@@ -46,7 +46,7 @@ class choraleModel(object):
 
     def __init__(self, is_training, timeNeurons, timeLayers, noteNeurons, noteLayers, dropout):
 
-        iterations = 1;
+        iterations = 30001;
 
         with tf.Session() as sess:
             # inputs to the model, batch is a submatrix of the statematrix that is fitted to our batchs and modelInput is the note vectors
@@ -102,26 +102,27 @@ class choraleModel(object):
             noteFin= tf.transpose(noteFin, [1,2,0,3])
 
             actualPlayProb = actual_note[:,:,0:1]
-            actualArticProb = sig_layer[:,:,1:]
+            # actualPlayProb = tf.reshape(actualPlayProb, [128*(batch_len-1)*batch_width,1])
+            # actualArticProb = sig_layer[:,:,1:]
 
             playProb = sig_layer[:,:,0:1]
-            guessPlayProb = tf.floor(playProb + 0.5)
+            # playProb = tf.reshape(playProb, [128*(batch_len-1)*batch_width,1])
 
             articProb = sig_layer[:,:,1:]
 
 
 
-            # actual_note_padded = tf.expand_dims(batch[:,1:,:,0],3)
-            # mask = tf.concat([tf.ones_like(actual_note_padded, optimize=True),actual_note_padded],axis=3)
-            # eps = tf.constant(1.19209e-07)
-            # percentages = mask * tf.log( 2 * noteFin * batch[:,1:] - noteFin - batch[:,1:] + 1 + eps )
-            # cost = tf.negative(tf.reduce_sum(percentages))
+            actual_note_padded = tf.expand_dims(batch[:,1:,:,0],3)
+            mask = tf.concat([tf.ones_like(actual_note_padded, optimize=True),actual_note_padded],axis=3)
+            eps = tf.constant(1.19209e-07)
+            percentages = mask * tf.log( 2 * noteFin * batch[:,1:] - noteFin - batch[:,1:] + 1 + eps )
+            cost = tf.negative(tf.reduce_sum(percentages))
 
-            softmax = tf.nn.softmax_cross_entropy_with_logits(logits=guessPlayProb,labels=actualPlayProb)
+            # softmax = tf.nn.softmax_cross_entropy_with_logits(logits=playProb,labels=actualPlayProb)
             # softmax = tf.nn.softmax(sig_layer)
 
 
-            cost = tf.reduce_mean(softmax)
+            # cost = tf.reduce_mean(cost)
             train_step = tf.train.RMSPropOptimizer(0.001).minimize(cost)
             # train_step = tf.train.AdadeltaOptimizer(learning_rate=0.1, epsilon=1e-6).minimize(cost)
 
@@ -135,16 +136,16 @@ class choraleModel(object):
                 inputBatch, inputModelInput = getModelInputs()
                 # print(inputBatch)
                 # print(inputModelInput)
-                # if i % 10 == 1:
-                #     train_accuracy = cost.eval(feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                #     print("step %d, training accuracy %g"%(i, train_accuracy))
+                if i % 10 == 1:
+                    train_accuracy = cost.eval(feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                    print("step %d, training accuracy %g"%(i, train_accuracy))
                 train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 # sess.run([percentages],feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                # if i == 0:
-                    # an = sess.run([guessPlayProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                #     ad = sess.run([playProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                    # print(an[0].shape)
-                #     print(ad[0])
+                if i == (iterations-1):
+                    an = sess.run([actualPlayProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                    ad = sess.run([playProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                    print(an[0])
+                    print(ad[0])
                     # print(an[0].shape)
 
                 merged = tf.summary.merge_all()
