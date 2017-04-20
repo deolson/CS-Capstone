@@ -95,7 +95,7 @@ def filesToDict(path):
 
 if __name__ == '__main__':
     #dict is essentially python equiv of a hashmap
-    path = "./LDataset/"
+    path = "./MedDataset/"
     matDict = {}
     dirs = os.listdir(path)
     for file in dirs:
