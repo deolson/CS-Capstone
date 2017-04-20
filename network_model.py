@@ -105,11 +105,8 @@ class choraleModel(object):
             actualArticProb = sig_layer[:,:,1:]
 
             playProb = sig_layer[:,:,0:1]
-            squares = tf.map_fn(lambda x: tf.cond(x>.5, lambda: tf.ceil(x), lambda: tf.floor(x)), playProb)
+            guessPlayProb = tf.round(playProb)
 
-            # for x in numpy.nditer(playProb, flags=["refs_ok"]):
-            #     print("1")
-                # playProb[...] = 1 if (x>.5) else 0
             articProb = sig_layer[:,:,1:]
 
 
@@ -144,10 +141,10 @@ class choraleModel(object):
                 # train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 # sess.run([percentages],feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 if i == 0:
-                    an = sess.run([playProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                    # ad = sess.run([playProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                    an = sess.run([squares],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                    ad = sess.run([playProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
                     print(an[0])
-                    print(an[0].shape)
+                    print(ad[0])
                     # print(an[0].shape)
 
                 merged = tf.summary.merge_all()
