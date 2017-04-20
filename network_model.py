@@ -105,7 +105,7 @@ class choraleModel(object):
             actualArticProb = sig_layer[:,:,1:]
 
             playProb = sig_layer[:,:,0:1]
-            guessPlayProb = tf.round(playProb)
+            guessPlayProb = tf.floor(playProb + 0.5)
 
             articProb = sig_layer[:,:,1:]
 
@@ -117,8 +117,8 @@ class choraleModel(object):
             # percentages = mask * tf.log( 2 * noteFin * batch[:,1:] - noteFin - batch[:,1:] + 1 + eps )
             # cost = tf.negative(tf.reduce_sum(percentages))
 
-            # softmax = tf.nn.softmax_cross_entropy_with_logits(labels=actual_note, logits=sig_layer)
-            softmax = tf.nn.softmax(sig_layer)
+            softmax = tf.nn.softmax_cross_entropy_with_logits(logits=guessPlayProb,labels=actualPlayProb)
+            # softmax = tf.nn.softmax(sig_layer)
 
 
             cost = tf.reduce_mean(softmax)
@@ -138,13 +138,13 @@ class choraleModel(object):
                 # if i % 10 == 1:
                 #     train_accuracy = cost.eval(feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 #     print("step %d, training accuracy %g"%(i, train_accuracy))
-                # train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 # sess.run([percentages],feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                if i == 0:
-                    an = sess.run([squares],feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                    ad = sess.run([playProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                    print(an[0])
-                    print(ad[0])
+                # if i == 0:
+                    # an = sess.run([guessPlayProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                #     ad = sess.run([playProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                    # print(an[0].shape)
+                #     print(ad[0])
                     # print(an[0].shape)
 
                 merged = tf.summary.merge_all()
