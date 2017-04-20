@@ -2,6 +2,7 @@ from tensorflow.contrib.rnn import LSTMCell, MultiRNNCell, BasicLSTMCell
 import tensorflow as tf
 from train_model import getModelInputs, batch_len, division_len, binary_len, batch_width
 import numpy as numpy
+numpy.set_printoptions(threshold=numpy.nan)
 
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
@@ -100,22 +101,35 @@ class choraleModel(object):
             noteFin = tf.reshape(sig_layer, [128,batch_width,(batch_len-1),2])
             noteFin= tf.transpose(noteFin, [1,2,0,3])
 
-            actual_note_padded = tf.expand_dims(batch[:,1:,:,0],3)
-            mask = tf.concat([tf.ones_like(actual_note_padded, optimize=True),actual_note_padded],axis=3)
+            actualPlayProb = actual_note[:,:,0:1]
+            actualArticProb = sig_layer[:,:,1:]
+
+            playProb = sig_layer[:,:,0:1]
+            squares = tf.map_fn(lambda x: tf.cond(x>.5, lambda: tf.ceil(x), lambda: tf.floor(x)), playProb)
+
+            # for x in numpy.nditer(playProb, flags=["refs_ok"]):
+            #     print("1")
+                # playProb[...] = 1 if (x>.5) else 0
+            articProb = sig_layer[:,:,1:]
 
 
 
-            eps = tf.constant(1.19209e-07)
-            percentages = mask * tf.log( 2 * noteFin * batch[:,1:] - noteFin - batch[:,1:] + 1 + eps )
-            # cost = T.neg(T.sum(loglikelihoods))
+            # actual_note_padded = tf.expand_dims(batch[:,1:,:,0],3)
+            # mask = tf.concat([tf.ones_like(actual_note_padded, optimize=True),actual_note_padded],axis=3)
+            # eps = tf.constant(1.19209e-07)
+            # percentages = mask * tf.log( 2 * noteFin * batch[:,1:] - noteFin - batch[:,1:] + 1 + eps )
+            # cost = tf.negative(tf.reduce_sum(percentages))
 
-            # cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=actual_note, logits=sig_layer))
-            # train_step = tf.train.RMSPropOptimizer(0.1).minimize(cost)
-            # train_step = tf.train.RMSPropOptimizer(0.0001).minimize(cross_entropy)
-            # train_step = tf.train.AdadeltaOptimizer(learning_rate=0.1, epsilon=1e-8).minimize(cross_entropy)
+            # softmax = tf.nn.softmax_cross_entropy_with_logits(labels=actual_note, logits=sig_layer)
+            softmax = tf.nn.softmax(sig_layer)
 
-            correct_prediction = tf.equal(tf.argmax(actual_note,1), tf.argmax(sig_layer,1))
-            accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+            cost = tf.reduce_mean(softmax)
+            train_step = tf.train.RMSPropOptimizer(0.001).minimize(cost)
+            # train_step = tf.train.AdadeltaOptimizer(learning_rate=0.1, epsilon=1e-6).minimize(cost)
+
+            # correct_prediction = tf.equal(tf.argmax(actual_note,1), tf.argmax(sig_layer,1))
+            # accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
             sess.run(tf.global_variables_initializer())
             train_writer = tf.summary.FileWriter('~.', sess.graph)
@@ -124,14 +138,17 @@ class choraleModel(object):
                 inputBatch, inputModelInput = getModelInputs()
                 # print(inputBatch)
                 # print(inputModelInput)
-                # if i % 5 == 0:
-                #     train_accuracy = accuracy.eval(feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                # if i % 10 == 1:
+                #     train_accuracy = cost.eval(feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 #     print("step %d, training accuracy %g"%(i, train_accuracy))
                 # train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 # sess.run([percentages],feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                an = sess.run([percentages],feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                print(an[0])
-                print(an[0].shape)
+                if i == 0:
+                    an = sess.run([playProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                    # ad = sess.run([playProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                    print(an[0])
+                    print(an[0].shape)
+                    # print(an[0].shape)
 
                 merged = tf.summary.merge_all()
                 train_writer.add_summary(merged,i)
