@@ -1,10 +1,4 @@
-import pickle
 import network_model
-import train_model
-
-datafile = open( "data.txt", "rb" )
-matDict = pickle.load(datafile);
-datafile.close()
 
 def main():
     #time layer #of nuerouns/ #of timeLayers/ #of noteLayer nuerouns/ #of noteLayers/ dropout
