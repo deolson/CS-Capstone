@@ -123,18 +123,23 @@ class choraleModel(object):
             sess.run(tf.global_variables_initializer())
             train_writer = tf.summary.FileWriter('~.', sess.graph)
 
+            f = open('training_results.txt', wb)
+
             for i in range(iterations):
                 inputBatch, inputModelInput = getModelInputs()
 
                 if i % 10 == 1:
                     train_accuracy = cost.eval(feed_dict={batch: inputBatch, modelInput:inputModelInput})
                     print("step %d, training cost %g"%(i, train_accuracy))
+                    f.write("step %d, training cost %g\n"%(i, train_accuracy))
                 train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 if i == (iterations-1):
                     an = sess.run([actualPlayProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
                     ad = sess.run([playProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                    print(an[0])
-                    print(ad[0])
+                    # print(an[0])
+                    # print(ad[0])
+                    f.write(an[0]"\n")
+                    f.write(ad[0]"\n")
 
                 merged = tf.summary.merge_all()
                 train_writer.add_summary(merged,i)
