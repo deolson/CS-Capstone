@@ -41,11 +41,11 @@ def StateMatrixtoMidi(StateMatrix):
             elif state[i][0] == 1:
                 on_notes.append(i)
         for note in off_notes:
-            track.append(midi.NoteOffEvent(tick=(time-lastcmdtime)*tick_scale, pitch = note + 24))
+            track.append(midi.NoteOffEvent(tick=(time-lastcmdtime)*tick_scale, pitch = note))
             lastcmdtime = time
 
         for note in on_notes:
-            track.append(midi.NoteOnEvent(tick=(time-lastcmdtime)*tick_scale, velocity = 40, pitch = note + 24))
+            track.append(midi.NoteOnEvent(tick=(time-lastcmdtime)*tick_scale, velocity = 40, pitch = note))
             lastcmdtime = time
 
         prev_state = state
