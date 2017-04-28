@@ -1,7 +1,9 @@
 from tensorflow.contrib.rnn import LSTMCell, MultiRNNCell, BasicLSTMCell
 import tensorflow as tf
-from train_model import getModelInputs, getFirstRowPlayed, batch_len, batch_width
+from train_model import getModelInputs, getSeg, batch_len, batch_width
 import numpy as numpy
+import tflearn as tflearn
+import json
 numpy.set_printoptions(threshold=numpy.nan)
 
 def weight_variable(shape):
@@ -30,17 +32,49 @@ def nn_layer(input_tensor, input_dim, output_dim, layer_name, act=tf.nn.sigmoid)
         tensDot = tf.tensordot(input_tensor, weights, [[2],[0]])
       return act((tensDot+biases), name='activation')
 
+def trainingInputs(batch):
+    # creates a numpy array that will match our input into the note layer
+    # (1,batch*time,2)
+    with tf.name_scope('casting'):
+        # tmp = numpy.zeros(shape=(1,batch_width*(batch_len-1),2))
+        tmp = numpy.zeros(shape=(1,batch_width*(batch_len-1),2))
+        tmp = tf.stack(tmp)
+        tmp = tf.cast(tmp, tf.float32)
+        # tmp = numpy.zeros(shape=(1,None,2))
+        # tmp = tf.stack(tmp)
+        # tmp = tf.cast(tmp, tf.float32)
+
+
+    # next we take the actual notes that were played in the form (batch, time, notes, 2) and ignore the first time: 0
+    # we ignore time: 0 because we are passing in the notes that where actually played at the next time step
+    # we then transpose that to (notes,batch,time,2) -> (127, batch*time,2)
+    # then pad the first layer with 0s from tmp to get (notes,time*batch,2)
+    # now our actual_notes match the dimensions of our timeFin dimensions
+    with tf.name_scope('reshaping'):
+        actual_note = tf.transpose(batch[:,1:,0:-1,:], [2,0,1,3])
+        actual_note = tf.reshape(actual_note, [127,batch_width*(batch_len-1),2])
+        actual_note = tf.concat([tmp,actual_note],0)
+    return actual_note
+
+
+def predInputs(batch):
+    actual_note = tf.reshape(batch, [128,1,2])
+    return actual_note
+
+
 class choraleModel(object):
 
     def __init__(self, is_training, timeNeurons, timeLayers, noteNeurons, noteLayers, dropout):
 
-        iterations = 1000;
+        iterations = 501;
 
         with tf.Session() as sess:
-            # inputs to the model, batch is a submatrix of the statematrix that is fitted to our batchs and modelInput is the note vectors
+
+            is_training = tflearn.get_training_mode()
+
             with tf.name_scope('inputs'):
-                batch = tf.placeholder(tf.float32, [batch_width, batch_len, 128, 2]) # (batch, time, notes, 2)
-                modelInput = tf.placeholder(tf.float32, [batch_len-1, batch_width*128, 80]) # subtract the last layer we don't need its output (time-1, batch*notes, vector len)
+                batch = tf.placeholder(tf.float32, [None, None, 128, 2]) # (batch, time, notes, 2)
+                modelInput = tf.placeholder(tf.float32, [None, None, 80]) # subtract the last layer we don't need its output (time-1, batch*notes, vector len)
                 # Tensorflow needs 3d array so modelInput [[vector],[vector],[vector]->128*batch],[[vector],[vector],[vector]->128*batch]
                 #                                          ------------------------------------time--------------------------------------
 
@@ -54,26 +88,13 @@ class choraleModel(object):
             # In order to now loop throguh the notes in the note layer we need to get (note,time*batch,hiddens)
             # first reshape to (time,batch,notes,hiddens) -> (notes, batch, time, hiddens) -> (note, time*batch,hiddens)
             with tf.name_scope('reshaping'):
-                timeFin = tf.reshape(timeOutputs, [batch_len-1,batch_width,128,300])
+                # timeFin = tf.reshape(timeOutputs, [batch_len-1,batch_width,128,300])
+                timeFin = tf.reshape(timeOutputs, [tf.shape(modelInput)[0],tf.shape(batch)[0],128,300])
                 timeFin = tf.transpose(timeFin, [2,1,0,3])
-                timeFin = tf.reshape(timeFin, [128,batch_width*(batch_len-1),300])
+                # timeFin = tf.reshape(timeFin, [128,batch_width*(batch_len-1),300])
+                timeFin = tf.reshape(timeFin, [128,tf.shape(modelInput)[0]*tf.shape(batch)[0],300])
 
-            # creates a numpy array that will match our input into the note layer
-            # (1,batch*time,2)
-            with tf.name_scope('casting'):
-                tmp = numpy.zeros(shape=(1,batch_width*(batch_len-1),2))
-                tmp = tf.stack(tmp)
-                tmp = tf.cast(tmp, tf.float32)
-
-            # next we take the actual notes that were played in the form (batch, time, notes, 2) and ignore the first time: 0
-            # we ignore time: 0 because we are passing in the notes that where actually played at the next time step
-            # we then transpose that to (notes,batch,time,2) -> (127, batch*time,2)
-            # then pad the first layer with 0s from tmp to get (notes,time*batch,2)
-            # now our actual_notes match the dimensions of our timeFin dimensions
-            with tf.name_scope('reshaping'):
-                actual_note = tf.transpose(batch[:,1:,0:-1,:], [2,0,1,3])
-                actual_note = tf.reshape(actual_note, [127,batch_width*(batch_len-1),2])
-                actual_note = tf.concat([tmp,actual_note],0)
+            actual_note = tf.cond(is_training, lambda: trainingInputs(batch), lambda: predInputs(batch))
 
             # we take the timeFin and smoosh it with the actual notes played along the 2 axis
             # this means that the actual notes played are added with the 300 hiddens we are passing in
@@ -125,28 +146,60 @@ class choraleModel(object):
 
             f = open('training_results.txt', 'w')
 
+            tflearn.is_training(True)
+
             for i in range(iterations):
                 inputBatch, inputModelInput = getModelInputs()
 
-                if i % 10 == 1:
+                if i % 20 == 1:
                     train_accuracy = cost.eval(feed_dict={batch: inputBatch, modelInput:inputModelInput})
                     print("step %d, training cost %g"%(i, train_accuracy))
                     f.write("step %d, training cost %g\n"%(i, train_accuracy))
                 train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 if i == (iterations-1):
-                    an = sess.run([actualPlayProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                    ad = sess.run([playProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                    an = sess.run([playProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                    # ad = sess.run([batch],feed_dict={batch: inputBatch, modelInput:inputModelInput})
                     print(an[0])
-                    print(ad[0])
-                    # f.write(an[0]"\n")
-                    # f.write(ad[0]"\n")
+                    # print(ad[0].shape)
+
 
                 merged = tf.summary.merge_all()
                 train_writer.add_summary(merged,i)
 
-            # is_training = False
-            # an = sess.run([noteOutputs],feed_dict={batch: inputBatch, modelInput:inputModelInput})
-            # print(an[0])
+
+
+            tflearn.is_training(False)
+            print("=======================================================")
+
+
+            matDict = dict()
+
+
+            inputBatch, inputModelInput = getSeg()
+            print(inputBatch.shape)
+            
+            startBatchInput = numpy.array(numpy.zeros([1,1,128,2]))
+            startModelInput = numpy.array(numpy.zeros([1,128,80]))
+            inBatch = startBatchInput
+
+            for j in range(20):
+
+
+                result = sess.run([sig_layer],feed_dict={batch: inBatch, modelInput:inputModelInput})
+
+                result = tf.reshape(result[0], [128,1,1,2])
+                inBatch= tf.transpose(result, [1,2,0,3]).eval()
+
+                print(result)
+                # batch = numpy.round(result)
+
+            print(batch)
+
+            matDict[str(i)] = batch
+
+            dataJSON = open('dataJSON.json', 'w')
+            json.dump(matDict, dataJSON)
+            dataJSON.close()
 
             saver.save(sess,'./train_model_checkpoint/export-model')
             sess.close()
