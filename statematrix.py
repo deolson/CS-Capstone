@@ -98,14 +98,21 @@ if __name__ == '__main__':
     path = "./OneDataset/"
     matDict = {}
     dirs = os.listdir(path)
+
+    # dataFile = open('data.txt', 'wb')
+    dataJSON = open('dataJSON.json', 'wb')
+
     for file in dirs:
         statematrix = midiToStatematrix(path+str(file))
         if len(statematrix) > batch_len:
             matDict[path+str(file)] = statematrix
-    dataFile = open('data.txt', 'wb')
-    cPickle.dump(matDict, dataFile, cPickle.HIGHEST_PROTOCOL)
-    dataFile.close()
-
-    dataJSON = open('dataJSON.json', 'wb')
+            # dataFile.write(matDict)
     json.dump(matDict, dataJSON)
+
+
+    # cPickle.dump(matDict, dataFile, cPickle.HIGHEST_PROTOCOL)
+    # dataFile.close()
+
+
+
     dataJSON.close()
