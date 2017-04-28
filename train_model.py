@@ -82,6 +82,12 @@ def batchToVectors(statematrixBatch):
 def getBatchPieces(matDict):
     #grab a random statematrix
     randomStatematrix = random.choice(list(matDict.values()))
+
+    
+    # modelInput = numpy.array(randomStatematrix)
+    # print(modelInput.shape)
+
+
     #where to start the sample in our statematrix, 0->(end-how big the batch is), only chooseing values at he start of measures
     while (len(randomStatematrix) < batch_len):
         print(randomStatematrix)
@@ -90,6 +96,22 @@ def getBatchPieces(matDict):
     batch = randomStatematrix[startindx:startindx+batch_len] #take the batch from the random statematrix
     modelInput = batchToVectors(batch)
     return batch, modelInput
+
+def getSeg():
+    global batch_len
+    batch_len = 1
+    global batch_width
+    batch_width = 1
+    print(batch_len)
+    print(batch_width)
+
+    batch, modelInput = zip(*[getBatchPieces(matDict) for _ in range(batch_width)])
+    batch = numpy.array(batch)
+
+    modelInput = numpy.array(modelInput)
+    tensorShapeModelInput = modelInput.transpose(1,0,2,3).reshape(batch_len,batch_width*128,80)
+    return batch, tensorShapeModelInput
+
 
 def getModelInputs():
     batch, modelInput = zip(*[getBatchPieces(matDict) for _ in range(batch_width)])
