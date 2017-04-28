@@ -102,6 +102,6 @@ if __name__ == '__main__':
         statematrix = midiToStatematrix(path+str(file))
         if len(statematrix) > batch_len:
             matDict[path+str(file)] = statematrix
-    dataFile = open('data.txt', 'wb')
+    dataFile = open('songDict.txt', 'wb')
     cPickle.dump(matDict, dataFile, cPickle.HIGHEST_PROTOCOL)
     dataFile.close()

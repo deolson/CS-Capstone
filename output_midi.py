@@ -6,7 +6,14 @@ import numpy
 import midi
 import json
 import os
+import time as timet
 
+# def DictToStateMatrix(matDict):
+#     keys = matDict.keys()
+#
+#     for key in keys:
+#         StateMatrix = matDict.get(key)
+#         StateMatrixtoMidi(StateMatrix)
 
 def StateMatrixtoMidi(StateMatrix):
     key = StateMatrix.keys()
@@ -57,12 +64,17 @@ def StateMatrixtoMidi(StateMatrix):
 
     eot = midi.EndOfTrackEvent(tick=len(StateMatrix))
     track.append(eot)
-    print pattern
-    midi.write_midifile("output.mid", pattern)
+    # print pattern
+
+    localtime   = timet.localtime()
+    timeString  = timet.strftime("%Y%m%d%H%M%S", localtime)
+    name = timeString+".mid"
+    midi.write_midifile(name, pattern)
+    os.rename("./%s" % (name), "./Midis/%s" % (name))
 
 
 if __name__ == '__main__':
-    DataFile = open("dataJSON.json", "rb")
+    DataFile = open("dataJSON.json", "r")
     StateMatrix = json.load(DataFile)
     DataFile.close()
     StateMatrixtoMidi(StateMatrix)
