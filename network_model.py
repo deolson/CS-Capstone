@@ -1,9 +1,12 @@
 from tensorflow.contrib.rnn import LSTMCell, MultiRNNCell, BasicLSTMCell
 import tensorflow as tf
-from train_model import getModelInputs, getSeg, batch_len, batch_width
+from train_model import getModelInputs, batchToVectors, batch_len, batch_width, stateToInputVectorArray
 import numpy as numpy
 import tflearn as tflearn
 import json
+import numpy.ma as ma
+
+
 numpy.set_printoptions(threshold=numpy.nan)
 
 def weight_variable(shape):
@@ -66,7 +69,7 @@ class choraleModel(object):
 
     def __init__(self, is_training, timeNeurons, timeLayers, noteNeurons, noteLayers, dropout):
 
-        iterations = 501;
+        iterations = 2000;
 
         with tf.Session() as sess:
 
@@ -132,12 +135,13 @@ class choraleModel(object):
             # sometimes the cross entropy will go to 0 if epsilon is too small or there is no epsilon
             eps = tf.constant(1.0e-7)
 
+            # cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=playProb,labels=actualPlayProb))
             # this the cross entropy function
             percentages = mask * tf.log( 2 * noteFin * batch[:,1:] - noteFin - batch[:,1:] + 1 + eps )
             cost = tf.negative(tf.reduce_sum(percentages))
 
             # optimizer
-            train_step = tf.train.RMSPropOptimizer(0.001).minimize(cost)
+            train_step = tf.train.RMSPropOptimizer(0.01).minimize(cost)
             # train_step = tf.train.AdadeltaOptimizer(learning_rate=0.1, epsilon=1e-6).minimize(cost)
 
             saver = tf.train.Saver()
@@ -147,20 +151,28 @@ class choraleModel(object):
             f = open('training_results.txt', 'w')
 
             tflearn.is_training(True)
-
+            song = numpy.array(numpy.zeros([1,128,2]))
             for i in range(iterations):
                 inputBatch, inputModelInput = getModelInputs()
-
+                # print(inputBatch)
+                # print(inputModelInput)
                 if i % 20 == 1:
                     train_accuracy = cost.eval(feed_dict={batch: inputBatch, modelInput:inputModelInput})
                     print("step %d, training cost %g"%(i, train_accuracy))
-                    f.write("step %d, training cost %g\n"%(i, train_accuracy))
+                    # f.write("step %d, training cost %g\n"%(i, train_accuracy))
                 train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                if i == (iterations-1):
-                    an = sess.run([playProb],feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                    # ad = sess.run([batch],feed_dict={batch: inputBatch, modelInput:inputModelInput})
-                    print(an[0])
-                    # print(ad[0].shape)
+                # if i > (iterations-100):
+                #     an = sess.run([sig_layer],feed_dict={batch: inputBatch, modelInput:inputModelInput})
+                #
+                #     result = tf.round(an[0]).eval()
+                #     result = tf.transpose(result, [1,0,2]).eval()
+                #     for k in range(128):
+                #         if result[0,k,0] == 0:
+                #             result[0,k,1] = 0
+                #     print("======")
+                #     print(result)
+                #     print("___________")
+                #     song = numpy.append(song, result, axis=0)
 
 
                 merged = tf.summary.merge_all()
@@ -172,30 +184,35 @@ class choraleModel(object):
             print("=======================================================")
 
 
-            matDict = dict()
+            # song = numpy.array(numpy.zeros([1,128,2]))
 
-
-            inputBatch, inputModelInput = getSeg()
-            print(inputBatch.shape)
-            
             startBatchInput = numpy.array(numpy.zeros([1,1,128,2]))
-            startModelInput = numpy.array(numpy.zeros([1,128,80]))
-            inBatch = startBatchInput
+            preinput = numpy.array(numpy.zeros([1,128,2])).tolist()
 
-            for j in range(20):
+            startModelInput = numpy.array(batchToVectors(preinput))
+            prev = startBatchInput
 
+            for j in range(200):
 
-                result = sess.run([sig_layer],feed_dict={batch: inBatch, modelInput:inputModelInput})
+                result = sess.run([sig_layer],feed_dict={batch: startBatchInput, modelInput:startModelInput})
 
-                result = tf.reshape(result[0], [128,1,1,2])
-                inBatch= tf.transpose(result, [1,2,0,3]).eval()
+                startBatchInput = prev
+                # print(result)
+                result = tf.round(result[0]).eval()
 
-                print(result)
-                # batch = numpy.round(result)
+                result = tf.transpose(result, [1,0,2]).eval()
 
-            print(batch)
+                for k in range(128):
+                    if result[0,k,0] == 0:
+                        result[0,k,1] = 0
+                song = numpy.append(song, result, axis=0)
+                prev = numpy.reshape(result, [1,1,128,2])
+                startModelInput = numpy.array([stateToInputVectorArray(j,state) for _,state in enumerate(result.tolist())])
 
-            matDict[str(i)] = batch
+            # print(batch)
+
+            matDict = dict()
+            matDict["test"] = song.tolist()
 
             dataJSON = open('dataJSON.json', 'w')
             json.dump(matDict, dataJSON)

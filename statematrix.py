@@ -106,6 +106,7 @@ if __name__ == '__main__':
         statematrix = midiToStatematrix(path+str(file))
         if len(statematrix) > batch_len:
             matDict[path+str(file)] = statematrix
+<<<<<<< HEAD
             # dataFile.write(matDict)
     json.dump(matDict, dataJSON)
 
@@ -116,3 +117,8 @@ if __name__ == '__main__':
 
 
     dataJSON.close()
+=======
+    dataFile = open('songDict.txt', 'wb')
+    cPickle.dump(matDict, dataFile, cPickle.HIGHEST_PROTOCOL)
+    dataFile.close()
+>>>>>>> 9f033650dc91f29b16e97450bdae642d13bb9f62
