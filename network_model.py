@@ -4,7 +4,6 @@ from train_model import getModelInputs, batchToVectors, batch_len, batch_width, 
 import numpy as numpy
 import tflearn as tflearn
 import json
-import numpy.ma as ma
 
 
 numpy.set_printoptions(threshold=numpy.nan)
@@ -43,9 +42,6 @@ def trainingInputs(batch):
         tmp = numpy.zeros(shape=(1,batch_width*(batch_len-1),2))
         tmp = tf.stack(tmp)
         tmp = tf.cast(tmp, tf.float32)
-        # tmp = numpy.zeros(shape=(1,None,2))
-        # tmp = tf.stack(tmp)
-        # tmp = tf.cast(tmp, tf.float32)
 
 
     # next we take the actual notes that were played in the form (batch, time, notes, 2) and ignore the first time: 0
@@ -61,7 +57,21 @@ def trainingInputs(batch):
 
 
 def predInputs(batch):
-    actual_note = tf.reshape(batch, [128,1,2])
+    # actual_note = tf.reshape(batch, [128,1,2])
+    tmp = numpy.zeros(shape=(1,1,2))
+    tmp = tf.stack(tmp)
+    tmp = tf.cast(tmp, tf.float32)
+
+
+# next we take the actual notes that were played in the form (batch, time, notes, 2) and ignore the first time: 0
+# we ignore time: 0 because we are passing in the notes that where actually played at the next time step
+# we then transpose that to (notes,batch,time,2) -> (127, batch*time,2)
+# then pad the first layer with 0s from tmp to get (notes,time*batch,2)
+# now our actual_notes match the dimensions of our timeFin dimensions
+    with tf.name_scope('reshaping'):
+        actual_note = tf.transpose(batch[:,:,0:-1,:], [2,0,1,3])
+        actual_note = tf.reshape(actual_note, [127,1,2])
+        actual_note = tf.concat([tmp,actual_note],0)
     return actual_note
 
 
@@ -69,7 +79,7 @@ class choraleModel(object):
 
     def __init__(self, is_training, timeNeurons, timeLayers, noteNeurons, noteLayers, dropout):
 
-        iterations = 2000;
+        iterations = 100;
 
         with tf.Session() as sess:
 
@@ -151,12 +161,12 @@ class choraleModel(object):
             f = open('training_results.txt', 'w')
 
             tflearn.is_training(True)
-            song = numpy.array(numpy.zeros([1,128,2]))
+
             for i in range(iterations):
                 inputBatch, inputModelInput = getModelInputs()
                 # print(inputBatch)
                 # print(inputModelInput)
-                if i % 20 == 1:
+                if i % 50 == 1:
                     train_accuracy = cost.eval(feed_dict={batch: inputBatch, modelInput:inputModelInput})
                     print("step %d, training cost %g"%(i, train_accuracy))
                     # f.write("step %d, training cost %g\n"%(i, train_accuracy))
@@ -184,7 +194,7 @@ class choraleModel(object):
             print("=======================================================")
 
 
-            # song = numpy.array(numpy.zeros([1,128,2]))
+            song = numpy.array(numpy.zeros([1,128,2]))
 
             startBatchInput = numpy.array(numpy.zeros([1,1,128,2]))
             preinput = numpy.array(numpy.zeros([1,128,2])).tolist()
@@ -192,23 +202,26 @@ class choraleModel(object):
             startModelInput = numpy.array(batchToVectors(preinput))
             prev = startBatchInput
 
-            for j in range(200):
+            for j in range(500):
 
-                result = sess.run([sig_layer],feed_dict={batch: startBatchInput, modelInput:startModelInput})
+                result = sess.run([sig_layer],feed_dict={batch: startBatchInput, modelInput:startModelInput})[0]
 
                 startBatchInput = prev
                 # print(result)
-                result = tf.round(result[0]).eval()
+                # result = tf.nn.softmax(result)
+                result = tf.round(result)
 
                 result = tf.transpose(result, [1,0,2]).eval()
-
+                print(result.shape)
                 for k in range(128):
                     if result[0,k,0] == 0:
                         result[0,k,1] = 0
-                song = numpy.append(song, result, axis=0)
-                prev = numpy.reshape(result, [1,1,128,2])
                 startModelInput = numpy.array([stateToInputVectorArray(j,state) for _,state in enumerate(result.tolist())])
 
+                song = numpy.append(song, result, axis=0)
+                prev = numpy.reshape(result, [1,1,128,2])
+                # startModelInput = numpy.array([stateToInputVectorArray(j,state) for _,state in enumerate(result.tolist())])
+                # startModelInput =  numpy.array(batchToVectors(result))
             # print(batch)
 
             matDict = dict()
