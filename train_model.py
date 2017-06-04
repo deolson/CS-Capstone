@@ -3,25 +3,25 @@ import numpy
 import pickle
 numpy.set_printoptions(threshold=numpy.nan)
 
-
+# datafile will assume that we have run the statematrix script and that we now have a song dictionary
 datafile = open( "songDict.txt", "rb" )
 matDict = pickle.load(datafile);
 datafile.close()
 
-batch_len = 16 #of segments trained on in 16th notes 16*8 = 8 measures -- training speed vs time patterns
+batch_len = 16*3 #of segments trained on in 16th notes 16*8 = 8 measures -- training speed vs time patterns
 division_len = 16 #step size of measures, we dont want to start a batch in the middle of a measure curr in 16th notes
 binary_len = 4 # number of bits needed to rep division_len
-batch_width = 2
+batch_width = 1 # number of batchs
 
+# we are not currently using, could need some review
+#idea is that instead of starting generation at 0s we could use the actual start of a song, but this s generally 0s anyhow
 def getFirstRowPlayed():
     batch, modelInput = zip(*[getFirst(matDict)])
     batch = numpy.array(batch)
     modelInput = numpy.array(modelInput)
-
     modelInput = modelInput[:,0:-1]
-    print(modelInput)
+    # print(modelInput)
     tensorShapeModelInput = modelInput.transpose(1,0,2,3).reshape(1,1*128,80)
-
     return batch, tensorShapeModelInput
 
 def getFirst(matDict):

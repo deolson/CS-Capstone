@@ -6,11 +6,8 @@ import numpy
 import midi
 import json
 import os
-<<<<<<< HEAD
-import datetime
-=======
+
 import time as timet
->>>>>>> 9f033650dc91f29b16e97450bdae642d13bb9f62
 
 # def DictToStateMatrix(matDict):
 #     keys = matDict.keys()
@@ -68,16 +65,12 @@ def StateMatrixtoMidi(StateMatrix):
 
     eot = midi.EndOfTrackEvent(tick=len(StateMatrix))
     track.append(eot)
-<<<<<<< HEAD
-    print pattern
-    name = "%s.mid" % (datetime.datetime.now())
-=======
+
     # print pattern
 
     localtime   = timet.localtime()
     timeString  = timet.strftime("%Y%m%d%H%M%S", localtime)
     name = timeString+".mid"
->>>>>>> 9f033650dc91f29b16e97450bdae642d13bb9f62
     midi.write_midifile(name, pattern)
     os.rename("./%s" % (name), "./Midis/%s" % (name))
 
