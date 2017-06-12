@@ -100,25 +100,14 @@ if __name__ == '__main__':
     dirs = os.listdir(path)
 
     # dataFile = open('data.txt', 'wb')
-    dataJSON = open('dataJSON.json', 'wb')
+    # dataJSON = open('dataJSON.json', 'wb')
 
     for file in dirs:
         statematrix = midiToStatematrix(path+str(file))
         if len(statematrix) > batch_len:
             matDict[path+str(file)] = statematrix
-<<<<<<< HEAD
-            # dataFile.write(matDict)
-    json.dump(matDict, dataJSON)
+            print(matDict[path+str(file)])
 
-
-    # cPickle.dump(matDict, dataFile, cPickle.HIGHEST_PROTOCOL)
-    # dataFile.close()
-
-
-
-    dataJSON.close()
-=======
     dataFile = open('songDict.txt', 'wb')
     cPickle.dump(matDict, dataFile, cPickle.HIGHEST_PROTOCOL)
     dataFile.close()
->>>>>>> 9f033650dc91f29b16e97450bdae642d13bb9f62

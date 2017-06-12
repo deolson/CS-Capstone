@@ -79,7 +79,7 @@ class choraleModel(object):
 
     def __init__(self, is_training, timeNeurons, timeLayers, noteNeurons, noteLayers, dropout):
 
-        iterations = 100;
+        iterations = 5000;
 
         with tf.Session() as sess:
 
@@ -169,7 +169,7 @@ class choraleModel(object):
                 if i % 50 == 1:
                     train_accuracy = cost.eval(feed_dict={batch: inputBatch, modelInput:inputModelInput})
                     print("step %d, training cost %g"%(i, train_accuracy))
-                    # f.write("step %d, training cost %g\n"%(i, train_accuracy))
+                    f.write("step %d, training cost %g\n"%(i, train_accuracy))
                 train_step.run(feed_dict={batch: inputBatch, modelInput:inputModelInput})
                 # if i > (iterations-100):
                 #     an = sess.run([sig_layer],feed_dict={batch: inputBatch, modelInput:inputModelInput})
@@ -191,6 +191,7 @@ class choraleModel(object):
 
 
             tflearn.is_training(False)
+            f.close()
             print("=======================================================")
 
 
@@ -212,7 +213,7 @@ class choraleModel(object):
                 result = tf.round(result)
 
                 result = tf.transpose(result, [1,0,2]).eval()
-                print(result.shape)
+                # print(result.shape)
                 for k in range(128):
                     if result[0,k,0] == 0:
                         result[0,k,1] = 0

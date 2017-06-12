@@ -5,10 +5,10 @@ numpy.set_printoptions(threshold=numpy.nan)
 
 # datafile will assume that we have run the statematrix script and that we now have a song dictionary
 datafile = open( "songDict.txt", "rb" )
-matDict = pickle.load(datafile);
+matDict = pickle.load(datafile)
 datafile.close()
 
-batch_len = 16*3 #of segments trained on in 16th notes 16*8 = 8 measures -- training speed vs time patterns
+batch_len = 16*10 #of segments trained on in 16th notes 16*8 = 8 measures -- training speed vs time patterns
 division_len = 16 #step size of measures, we dont want to start a batch in the middle of a measure curr in 16th notes
 binary_len = 4 # number of bits needed to rep division_len
 batch_width = 1 # number of batchs
@@ -90,7 +90,7 @@ def getBatchPieces(matDict):
 
     #where to start the sample in our statematrix, 0->(end-how big the batch is), only chooseing values at he start of measures
     while (len(randomStatematrix) < batch_len):
-        print(randomStatematrix)
+        # print(randomStatematrix)
         randomStatematrix = random.choice(list(matDict.values()))
     startindx = random.randrange(0,len(randomStatematrix)-batch_len,division_len)
     batch = randomStatematrix[startindx:startindx+batch_len] #take the batch from the random statematrix
